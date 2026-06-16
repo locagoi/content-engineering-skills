@@ -1,0 +1,14 @@
+*.bak-*
+.DS_Store
+Thumbs.db
+node_modules/
+.env
+.env.*
+
+# Runtime working dirs (skills create these locally)
+data/
+logs/
+.playwright-mcp/
+.claude/scheduled_tasks.lock
+geo/runs/
+geo/prompts.json

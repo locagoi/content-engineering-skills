@@ -1,0 +1,16 @@
+{
+  "_comment": "Copy to prompts.json and edit. 'prompts' = the buyer questions you want AI engines to cite you for. 'engines' maps a label to an OpenRouter model id (override the defaults as model ids change).",
+  "engines": {
+    "perplexity": "perplexity/llama-3.1-sonar-large-128k-online",
+    "chatgpt": "openai/gpt-4o-search-preview",
+    "gemini": "google/gemini-2.0-flash-001",
+    "claude": "anthropic/claude-3.5-sonnet"
+  },
+  "prompts": [
+    "What are the best tools for <your category> in <your market>?",
+    "How do I choose a <your category> provider?",
+    "<your category> vs <adjacent category>: which should I use?",
+    "Who are the top companies offering <your service>?",
+    "What should I look for when buying <your product>?"
+  ]
+}
