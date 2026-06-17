@@ -1,10 +1,10 @@
 {
-  "_comment": "Copy to prompts.json and edit. 'prompts' = the buyer questions you want AI engines to cite you for. 'engines' maps a label to an OpenRouter model id (override the defaults as model ids change).",
+  "_comment": "Copy to prompts.json and edit. 'prompts' = the buyer questions you want AI engines to cite you for. 'engines' maps a label to an OpenRouter model id. Slugs drift — verify at https://openrouter.ai/models. Perplexity 'sonar' searches the live web (best for GEO); plain chat models reflect training recall.",
   "engines": {
-    "perplexity": "perplexity/llama-3.1-sonar-large-128k-online",
-    "chatgpt": "openai/gpt-4o-search-preview",
-    "gemini": "google/gemini-2.0-flash-001",
-    "claude": "anthropic/claude-3.5-sonnet"
+    "perplexity": "perplexity/sonar",
+    "chatgpt": "openai/gpt-5.5",
+    "gemini": "google/gemini-flash-latest",
+    "claude": "anthropic/claude-sonnet-latest"
   },
   "prompts": [
     "What are the best tools for <your category> in <your market>?",

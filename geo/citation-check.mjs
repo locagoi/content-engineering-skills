@@ -29,12 +29,15 @@ const target = (args.find((a) => !a.startsWith('--')) || 'example.com').replace(
 const limit = Number((args.find((a) => a.startsWith('--limit')) || '').split(/[ =]/)[1]) || Infinity;
 const onlyEngine = (args.find((a) => a.startsWith('--engine')) || '').split(/[ =]/)[1];
 
-// OpenRouter model ids. Override via geo/prompts.json "engines". "online" models (Perplexity) cite live sources.
+// OpenRouter model ids. Override via geo/prompts.json "engines".
+// Model slugs DRIFT — verify current ones at https://openrouter.ai/models.
+// Perplexity "sonar" searches the LIVE web (most representative of AI search / GEO);
+// plain chat models reflect training-data recall. "-latest" aliases auto-update.
 const DEFAULT_ENGINES = {
-  perplexity: 'perplexity/llama-3.1-sonar-large-128k-online',
-  chatgpt: 'openai/gpt-4o-search-preview',
-  gemini: 'google/gemini-2.0-flash-001',
-  claude: 'anthropic/claude-3.5-sonnet',
+  perplexity: 'perplexity/sonar',
+  chatgpt: 'openai/gpt-5.5',
+  gemini: 'google/gemini-flash-latest',
+  claude: 'anthropic/claude-sonnet-latest',
 };
 
 if (!KEY) { console.error('Missing OPENROUTER_API_KEY (env or your secrets file).'); process.exit(2); }
