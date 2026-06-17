@@ -1,5 +1,7 @@
 # geo-toolkit
 
+[![test](https://github.com/locagoi/content-engineering-skills/actions/workflows/test.yml/badge.svg)](https://github.com/locagoi/content-engineering-skills/actions/workflows/test.yml)
+
 A self-contained **GEO** (Generative Engine Optimization) toolkit for [Claude Code](https://claude.com/claude-code) — get your site **surfaced and cited by AI answer engines** (ChatGPT, Perplexity, Google AI Overviews, Claude), not just ranked in classic search.
 
 It's the **whole loop, automatable**: `analytics → gaps → content → measure`. Clone it, point it at your site/analytics, and grow your AI-search visibility on a schedule.
@@ -31,8 +33,11 @@ npm test                                 # → unit tests for the GEO helpers
 
 ## Install the skills in Claude Code
 
+```bash
+./setup.sh        # macOS/Linux — symlinks skills/*.md into ~/.claude/commands
+```
 ```powershell
-.\setup.ps1     # hardlinks skills/*.md into ~/.claude/commands (Windows; no admin on NTFS)
+.\setup.ps1       # Windows — hardlinks skills/*.md into ~/.claude/commands (no admin on NTFS)
 ```
 Then: `/geo full`, or step by step `/scan`, `/demand`, `/ai-visibility`, `/longtail`.
 
