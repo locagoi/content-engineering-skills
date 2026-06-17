@@ -182,22 +182,21 @@ Gruppiere ALLE Keywords (GSC + AC) nach potentiellen Artikeln. Jedes Keyword geh
 - Deutsche Keywords → immer relevant (passen zur Zielgruppe)
 - Englische Keywords → NUR wenn expliziter B2B/Sales-Kontext (nicht "cold email for job application")
 
-### Schritt 5b: AI-Visibility Gap Check (optional)
+### Schritt 5b: Prioritäten aus dem GEO-Backlog (empfohlen)
 
-Prüfe ob es einen aktuellen `/ai-visibility`-Run gibt (siehe Skill `ai-visibility`):
+Bevorzugte Eingabe ist der **gemergte Backlog** aus dem `gaps`-Schritt (`/geo` Schritt 4) — er kombiniert Search-Demand (GSC/GA4 via `/demand`) mit AI-Citation-Gaps (`/ai-visibility`):
 
 ```bash
-LATEST=$(ls "$PROJECTS_DIR/content-engineering-skills/geo/runs/" | sort | tail -1)
-cat "$PROJECTS_DIR/content-engineering-skills/geo/runs/$LATEST/summary.json"
+LATEST=$(ls "$PROJECTS_DIR/content-engineering-skills/geo/runs/" | grep '^backlog-' | sort | tail -1)
+cat "$PROJECTS_DIR/content-engineering-skills/geo/runs/$LATEST"
 ```
 
-**Nutze die Citation-Gaps so:**
-- Für jedes Top-10-Thema: prüfe ob der Run **Gaps** dafür hat (Prompts wo deine Domain NICHT zitiert wird)
-- Themen mit Citation-Gaps **höher priorisieren** — da fehlt Content der bei AI-Engines zitiert werden könnte
-- Zeige in der Tabelle eine zusätzliche Spalte "AI Visibility" (zitiert / nicht zitiert / kein Test)
-- Zeige welche **Competitor-Domains** für das Thema zitiert werden
+**Nutze den Backlog so:**
+- Schreibe die **Top-Items** zuerst — `ai-citation-gap` (AI-Engines zitieren dich nicht) vor `search-demand` (echtes Volumen, schwache Position).
+- Pro Item: zeige `why`, und bei Citation-Gaps die **Competitor-Domains**, die stattdessen zitiert werden — schreib besser als die.
+- Markiere in der Themen-Tabelle Quelle (`ai-citation-gap` / `search-demand`) + Demand.
 
-Falls kein CEO-Loop Run existiert, überspringe diesen Schritt.
+Falls kein Backlog existiert: nutze ersatzweise das neueste `summary.json` (Citation-Gaps) bzw. `demand-*.json` direkt, oder überspringe.
 
 ### Schritt 6: Top 10 vorschlagen
 
@@ -210,7 +209,7 @@ Präsentiere die Top 10 **Artikel-Themen** (nicht einzelne Keywords!) sortiert n
 - `Keywords` = Anzahl der zugeordneten Keywords
 - `Quellen` = GSC / AC / GT (Google Trends)
 - `Trend` = UP / STABLE / DOWN (aus Trends-Daten des Seed-Keywords)
-- `AI Visibility` = zitiert / nicht zitiert + Top-Competitor / kein Test (aus CEO-Loop)
+- `AI Visibility` = zitiert / nicht zitiert + Top-Competitor / kein Test (aus dem GEO-Backlog)
 
 **Warte auf Bestätigung des Users bevor du weitermachst.**
 

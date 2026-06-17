@@ -30,9 +30,15 @@ This file is the fix reference for the scanner. Each `/scan` FAIL maps to one of
 - **Authorship + recency** (`author`, `datePublished`/`dateModified`) — freshness and provenance raise citation odds.
 - **Descriptive link text and image `alt`** — both are machine-readable context, not decoration.
 
-## The loop
+## The loop (analytics → gaps → content → measure)
 
-1. `/scan yourdomain.com` → fix every FAIL until you're ≥ 90.
-2. `/ai-visibility yourdomain.com` → find the buyer prompts where competitors get cited and you don't.
-3. `/longtail` → write the data-rich page that answers each gap.
-4. Re-measure. GEO is a closed loop, not a one-time audit.
+Run by `/geo`, or step by step:
+
+1. **Audit** — `/scan yourdomain.com` → fix every FAIL until ≥ 90. The site has to be machine-readable before content can get cited.
+2. **Analytics** — `/demand` → GSC search demand + GA4 engagement + Clarity behavior. This is *what people actually want* and where you're already close (striking distance).
+3. **Measure citations** — `/ai-visibility yourdomain.com` → the buyer prompts where competitors get cited and you don't, plus the delta vs your last run.
+4. **Gaps** — `geo/gaps.mjs` merges 2 + 3 into one ranked backlog: citation gaps first, then high-demand striking-distance queries.
+5. **Content** — `/longtail` → write the data-rich page that answers each top gap; publish; request indexing.
+6. **Measure again** — re-run step 3 after a re-crawl window; the delta shows which gaps closed. Then loop.
+
+GEO is a closed loop, not a one-time audit — and `/geo` can run it on a schedule.

@@ -43,3 +43,36 @@ export function computeDelta(prev, curr) {
   const currRate = rate(curr);
   return { prevRate, currRate, delta: currRate - prevRate, closed, opened, gainedDomains: gained, lostDomains: lost };
 }
+
+// "Striking distance" search demand: queries that already rank on page 1–2 (pos 5–20) with
+// real impressions but weak CTR. These are the highest-ROI content opportunities from GSC.
+export function strikingDistance(gscRows, { minImpressions = 50, posMin = 5, posMax = 20 } = {}) {
+  return (gscRows || [])
+    .filter((r) => r.impressions >= minImpressions && r.position >= posMin && r.position <= posMax)
+    .map((r) => ({ query: r.query, impressions: r.impressions, position: Math.round(r.position * 10) / 10, ctr: r.ctr }))
+    .sort((a, b) => b.impressions - a.impressions);
+}
+
+// The "gaps" step: merge AI-citation gaps (where AI engines don't cite you) with search-demand
+// gaps (where real traffic exists but you're weak) into ONE ranked content backlog.
+// Citation gaps rank highest (being invisible in AI answers is the core GEO problem),
+// boosted by how many competitors get cited instead; demand gaps ranked by impressions × position.
+export function buildBacklog({ citationGaps = [], gscOpps = [], topN = 25 } = {}) {
+  const items = [];
+  for (const g of citationGaps) {
+    const comp = g.instead || g.competitors || [];
+    items.push({
+      topic: g.prompt, kind: 'ai-citation-gap', engine: g.engine, competitors: comp, demand: 0,
+      score: 1000 + comp.length * 100,
+      why: `Not cited by ${g.engine || 'AI'}${comp.length ? `; cited instead: ${comp.slice(0, 3).join(', ')}` : ''}`,
+    });
+  }
+  for (const o of gscOpps) {
+    items.push({
+      topic: o.query, kind: 'search-demand', impressions: o.impressions, position: o.position, demand: o.impressions,
+      score: Math.min(o.impressions, 900) + (20 - Math.min(o.position, 20)) * 5,
+      why: `${o.impressions} impressions at avg position ${o.position} — striking distance`,
+    });
+  }
+  return items.sort((a, b) => b.score - a.score).slice(0, topN);
+}
