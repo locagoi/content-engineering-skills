@@ -1,0 +1,92 @@
+{
+  "_comment": "Pipeline state — the source of truth for /pipeline. Copy to state.json (gitignored by default? no: COMMIT it — the diff is the audit trail). One record per piece, keyed by type+slug. Every field below is used by a dispatcher check; nothing here is decorative.",
+  "_states": [
+    "idea",
+    "approved",
+    "draft",
+    "review",
+    "shipped",
+    "rejected"
+  ],
+  "_types": [
+    "article",
+    "post",
+    "page",
+    "refresh"
+  ],
+  "pieces": [
+    {
+      "type": "article",
+      "slug": "outreach-channel-matrix",
+      "state": "idea",
+      "period": "2026-W37",
+      "card": {
+        "task": "Decide which channel to use for 200 accounts this week without legal risk",
+        "artefact": "matrix",
+        "ownership": "Our own legal review of seven channels, with statute citations",
+        "edge": "Most teams assume B2B cold email is broadly permitted; per channel it is not"
+      },
+      "gate1_ref": "https://your-chat/archives/C123/p1700000000",
+      "created": "2026-09-08"
+    },
+    {
+      "type": "article",
+      "slug": "citation-tracking-setup",
+      "state": "review",
+      "period": "2026-W36",
+      "pr": "https://github.com/YOUR_ORG/YOUR_SITE/pull/128",
+      "asset": "public/visuals/citation-tracking-setup.webp",
+      "claims": [
+        {
+          "text": "Empty AI-engine answers are unmeasured, not uncited",
+          "source": "geo/runs/2026-09-07/summary.json",
+          "qualifier": "observed across one measurement period"
+        }
+      ],
+      "recommendation": "ship",
+      "entered_review": "2026-09-02"
+    },
+    {
+      "type": "refresh",
+      "slug": "refresh-pricing-meta",
+      "state": "draft",
+      "period": "2026-W37",
+      "target": "/pricing/",
+      "note": "Title 71 chars, truncates in SERPs. No new claim, so no gate 2 and no asset required.",
+      "pr": "https://github.com/YOUR_ORG/YOUR_SITE/pull/131"
+    },
+    {
+      "type": "post",
+      "slug": "ai-sdr-replacement-claim",
+      "state": "rejected",
+      "period": "2026-W35",
+      "rejected_on": "2026-09-01",
+      "reason": "refuted-core-claim",
+      "evidence": "The 90-day figure traces to no source we can name; the piece rests on it entirely.",
+      "reversible": true,
+      "_comment": "Rejected records are dedup memory. Never delete them — this is what stops the same idea returning next period. Reversible when the facts change."
+    },
+    {
+      "type": "page",
+      "slug": "geo-services",
+      "state": "shipped",
+      "period": "2026-W34",
+      "live_url": "https://YOUR_SITE/geo-services/",
+      "published": "2026-08-22",
+      "pr": "https://github.com/YOUR_ORG/YOUR_SITE/pull/119",
+      "_comment": "Reconcile (check 0) creates records like this for anything that reached the site outside the loop, so dedup sees the real world."
+    }
+  ],
+  "meta": {
+    "last_reconcile": "2026-09-10",
+    "last_report": "2026-09-07",
+    "quota_per_period": {
+      "article": 7,
+      "post": 3,
+      "page": 1
+    },
+    "_quota_comment": "A ceiling for the approval gate, never a target for ideation. Shortfall gets reported, not padded with filler.",
+    "gate2_expiry_days": 21,
+    "gate2_batch_size": 10
+  }
+}
