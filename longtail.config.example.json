@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to longtail.config.json and fill in your own values. /longtail reads this instead of hardcoding anything org-specific. Nothing in this file should ever be committed with real values — longtail.config.json is gitignored.",
+  "_comment": "Copy this OUTSIDE the repo, fill in your values, and point CONTENT_CONFIG_DIR at that directory. Do not place the filled-in file inside this checkout: a path outside the tree is a property, .gitignore is only a promise that `git add -f` breaks. /longtail reads it from there.",
   "site": "example.com",
   "_site": "Your domain, without protocol. Used in prompts and for internal-link building.",
   "section": "/knowledge/",

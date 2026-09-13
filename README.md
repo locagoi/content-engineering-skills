@@ -81,9 +81,19 @@ export PROJECTS_DIR="$HOME/Projects"     # macOS/Linux  (Windows: setx PROJECTS_
 | `/scan` | nothing |
 | `/ai-visibility` | an [OpenRouter](https://openrouter.ai) key (`OPENROUTER_API_KEY`); verify model ids in `geo/prompts.json` |
 | `/demand` | Google service account (`GSC_CREDENTIALS_FILE`, `GSC_SITE`, optional `GA4_PROPERTY_ID`) + a Clarity MCP |
-| `/longtail` | your own site (assumes Astro) + a publishing path + `longtail.config.json` |
+| `/longtail` | your own site (assumes Astro) + a publishing path + `CONTENT_CONFIG_DIR` (see below) |
 
 Secrets go in env vars or a folder **outside** the repo — nothing here reads a hard-coded key.
+
+**Your own values live outside the repo too.** Copy `longtail.config.example.json` somewhere private, fill it in, and point `CONTENT_CONFIG_DIR` at that directory:
+
+```bash
+mkdir -p ~/my-content-config
+cp longtail.config.example.json ~/my-content-config/longtail.config.json
+export CONTENT_CONFIG_DIR="$HOME/my-content-config"
+```
+
+Seeds, topic scope and site settings are your content strategy and your competitor watchlist — they are not template content. Outside the tree, not gitignored inside it: a path outside is a property, `.gitignore` is a promise. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Run it automatically
 

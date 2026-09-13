@@ -20,6 +20,17 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
 });
 const { readFileSync } = require('fs');
+const { join } = require('path');
+// Liest die Konfiguration aus \$CONTENT_CONFIG_DIR — einem Verzeichnis AUSSERHALB
+// dieses Repos. So liegt kein einziger org-spezifischer Wert je in diesem Baum.
+function loadConfig() {
+  const dir = process.env.CONTENT_CONFIG_DIR;
+  if (!dir) throw new Error(
+    'CONTENT_CONFIG_DIR ist nicht gesetzt. Kopiere longtail.config.example.json in ein\n' +
+    'Verzeichnis ausserhalb dieses Repos, trage deine Werte ein und setze:\n' +
+    '  export CONTENT_CONFIG_DIR="$HOME/pfad/zu/deiner/config"');
+  return JSON.parse(readFileSync(join(dir, 'longtail.config.json'), 'utf8'));
+}
 async function run() {
   const client = await auth.getClient();
   const sc = google.searchconsole({ version: 'v1', auth: client });
@@ -57,10 +68,11 @@ function fetchSuggestions(query) {
   });
 }
 async function run() {
-  // Seeds kommen aus longtail.config.json (Vorlage: longtail.config.example.json).
-  // NIE hier hartkodieren: die Seed-Liste IST die eigene Keyword- und
-  // Wettbewerbsstrategie und hat in einem oeffentlichen Template nichts zu suchen.
-  const cfg = JSON.parse(readFileSync('longtail.config.json', 'utf8'));
+  // Config liegt AUSSERHALB dieses Checkouts, in \$CONTENT_CONFIG_DIR.
+  // Nicht hier im Baum und nicht per .gitignore geschuetzt: ein Pfad ausserhalb
+  // ist eine Eigenschaft, .gitignore nur ein Versprechen, das ein `git add -f`
+  // bricht. Die Seed-Liste IST die eigene Keyword- und Wettbewerbsstrategie.
+  const cfg = loadConfig();
   const seeds = cfg.seeds;
   const allSuggestions = new Map();
   for (const seed of seeds) {
@@ -96,7 +108,7 @@ cd "$PROJECTS_DIR/your-site" && node -e "
 const googleTrends = require('google-trends-api');
 async function run() {
   const anchor = 'b2b vertrieb';
-  const seeds = JSON.parse(readFileSync('longtail.config.json', 'utf8')).seeds;
+  const seeds = loadConfig().seeds;
   const results = {};
   for (let i = 0; i < seeds.length; i += 4) {
     const batch = [anchor, ...seeds.slice(i, i + 4)].slice(0, 5);

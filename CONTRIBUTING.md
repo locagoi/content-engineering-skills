@@ -16,9 +16,16 @@ Everything here must be true for **any** org that clones it. Concretely:
 | "Include competitor brands if you want their comparison queries" | The actual competitor list |
 
 The last two rows are the ones people get wrong. A keyword seed list or a topic scope
-looks harmless, but it **is** a content strategy and a competitor watchlist. Those go in
-`longtail.config.json`, which is gitignored. The committed file is
-`longtail.config.example.json`, with placeholders only.
+looks harmless, but it **is** a content strategy and a competitor watchlist.
+
+Those live in `$CONTENT_CONFIG_DIR/longtail.config.json` — a directory **outside this
+repo**. The committed file is `longtail.config.example.json`, placeholders only.
+
+Keeping real values outside the tree rather than gitignored inside it is deliberate: a
+path outside the checkout is a *property*, `.gitignore` is a *promise* that one
+`git add -f`, one editor "add all", or one `cp -r` of the directory breaks. If you run
+this alongside a private stack, `CONTENT_CONFIG_DIR` points into that private repo and
+nothing org-specific is ever written into this one.
 
 ## The guard
 
