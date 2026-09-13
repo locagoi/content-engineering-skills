@@ -2,24 +2,34 @@
 
 [![test](https://github.com/locagoi/content-engineering-skills/actions/workflows/test.yml/badge.svg)](https://github.com/locagoi/content-engineering-skills/actions/workflows/test.yml)
 
-A self-contained **GEO** (Generative Engine Optimization) toolkit for [Claude Code](https://claude.com/claude-code) — get your site **surfaced and cited by AI answer engines** (ChatGPT, Perplexity, Google AI Overviews, Claude), not just ranked in classic search.
+A self-contained **content-engineering** toolkit for [Claude Code](https://claude.com/claude-code): run content as an unattended loop, and get your site **surfaced and cited by AI answer engines** (ChatGPT, Perplexity, Google AI Overviews, Claude) — not just ranked in classic search.
 
-It's the **whole loop, automatable**: `analytics → gaps → content → measure`. Clone it, point it at your site/analytics, and grow your AI-search visibility on a schedule.
+Two loops, one repo:
 
-> Built for a real content stack, released as a clone-and-adapt template. Org-specific values are `YOUR_*` placeholders.
+- **The GEO loop** — `analytics → gaps → content → measure`. Point it at your site and grow AI-search visibility on a schedule.
+- **The pipeline loop** — `idea → gate → creation → gate → publish`. A scheduled dispatcher runs the next due step and stops at the two decisions a human actually owns.
+
+> Built for a real content stack, released as a clone-and-adapt template. Org-specific values are `YOUR_*` placeholders,
+> and a CI guard keeps it that way — see [CONTRIBUTING.md](CONTRIBUTING.md) before adding anything.
 
 ## The loop
 
 ```
-/geo            ← orchestrator: runs the whole loop end to end (schedule it → GEO on autopilot)
- ├─ /scan          ← audit a site's AI-friendliness (30 checks → score + fixes)   [no key, no deps]
- ├─ /demand        ← analytics: GSC search demand + GA4 engagement + Clarity behavior
- ├─ /ai-visibility ← measure: ask AI engines your buyer questions, get citation rate + run-over-run delta
- │   └─ gaps.mjs   ← merge demand + citation gaps → one ranked content backlog
- └─ /longtail      ← content: write the data-rich, citable article for each top backlog item
+/pipeline       ← dispatcher: runs the next due step on a schedule, stops at the human gates
+ ├─ /ideation      ← turn signals into ARTEFACTS (matrix, flow, template) — not "insights"
+ │                    → 🔔 gate 1: is this idea worth making?
+ ├─ /geo           ← orchestrator for the GEO loop below (schedule it → GEO on autopilot)
+ │   ├─ /scan          ← audit a site's AI-friendliness (30 checks → score + fixes) [no key, no deps]
+ │   ├─ /demand        ← analytics: GSC search demand + GA4 engagement + Clarity behavior
+ │   ├─ /ai-visibility ← measure: citation rate + run-over-run delta + per-lane sensor health
+ │   │   └─ gaps.mjs   ← merge demand + citation gaps → one ranked content backlog
+ │   └─ /longtail      ← content: write the data-rich, citable article for each backlog item
+ └─ publish        ← 🔔 gate 2: review the RENDERED piece in the PR → merge, index, measure
 ```
 
-**analytics → gaps → content → measure → repeat.** See [GEO-PLAYBOOK.md](GEO-PLAYBOOK.md) for the why behind every check.
+**analytics → gaps → content → measure → repeat**, with two human gates around it. See
+[GEO-PLAYBOOK.md](GEO-PLAYBOOK.md) for the why behind every check, and
+[skills/pipeline.md](skills/pipeline.md) for why the gate rules look the way they do.
 
 ## Quick start (zero setup — the scanner needs no key, no deps)
 
@@ -39,7 +49,8 @@ npm test                                 # → unit tests for the GEO helpers
 ```powershell
 .\setup.ps1       # Windows — hardlinks skills/*.md into ~/.claude/commands (no admin on NTFS)
 ```
-Then: `/geo full`, or step by step `/scan`, `/demand`, `/ai-visibility`, `/longtail`.
+Then: `/pipeline auto` for the full loop, `/geo full` for just the GEO half, or step by step
+`/ideation`, `/scan`, `/demand`, `/ai-visibility`, `/longtail`.
 
 Set `PROJECTS_DIR` and clone into `$PROJECTS_DIR/content-engineering-skills` so the skills find the bundled scripts:
 ```bash
@@ -51,23 +62,38 @@ export PROJECTS_DIR="$HOME/Projects"     # macOS/Linux  (Windows: setx PROJECTS_
 | Path | What | Needs |
 |---|---|---|
 | `scanner/check.mjs` | 30-check AI-friendliness scanner | nothing |
-| `geo/citation-check.mjs` | citation tracker + run-over-run delta | OpenRouter key |
+| `geo/citation-check.mjs` | citation tracker + delta + **per-lane sensor health** | OpenRouter key |
 | `geo/demand.mjs` | GSC + GA4 demand puller | `npm install` + Google service account |
 | `geo/gaps.mjs` | merges demand + citation gaps → ranked backlog | nothing |
 | `geo/lib.mjs` + `test/run.mjs` | pure, unit-tested helpers (`npm test`) | nothing |
-| `skills/*.md` | the slash-commands: `geo`, `scan`, `demand`, `ai-visibility`, `longtail` | — |
+| `pipeline/state.example.json` | the pipeline state schema (copy it, commit your `state.json`) | nothing |
+| `longtail.config.example.json` | seeds, topic scope and site settings for `/longtail` (copy to `longtail.config.json`, gitignored) | nothing |
+| `scripts/check-generic.mjs` | template guard — fails CI on anything org-specific | nothing |
+| `skills/*.md` | the slash-commands: `pipeline`, `ideation`, `geo`, `scan`, `demand`, `ai-visibility`, `longtail` | — |
 | `GEO-PLAYBOOK.md`, `STRATEGY.md`, `CONVENTIONS.md` | the why + your templates | — |
 
 ## What you bring (per step)
 
 | Step | Provide |
 |---|---|
+| `/ideation` | your own buyer questions (reply threads, tickets, call notes) |
+| `/pipeline` | a git repo for the content, a place to post gate-1 cards, a scheduler |
 | `/scan` | nothing |
 | `/ai-visibility` | an [OpenRouter](https://openrouter.ai) key (`OPENROUTER_API_KEY`); verify model ids in `geo/prompts.json` |
 | `/demand` | Google service account (`GSC_CREDENTIALS_FILE`, `GSC_SITE`, optional `GA4_PROPERTY_ID`) + a Clarity MCP |
-| `/longtail` | your own site (assumes Astro) + a publishing path |
+| `/longtail` | your own site (assumes Astro) + a publishing path + `CONTENT_CONFIG_DIR` (see below) |
 
 Secrets go in env vars or a folder **outside** the repo — nothing here reads a hard-coded key.
+
+**Your own values live outside the repo too.** Copy `longtail.config.example.json` somewhere private, fill it in, and point `CONTENT_CONFIG_DIR` at that directory:
+
+```bash
+mkdir -p ~/my-content-config
+cp longtail.config.example.json ~/my-content-config/longtail.config.json
+export CONTENT_CONFIG_DIR="$HOME/my-content-config"
+```
+
+Seeds, topic scope and site settings are your content strategy and your competitor watchlist — they are not template content. Outside the tree, not gitignored inside it: a path outside is a property, `.gitignore` is a promise. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Run it automatically
 
@@ -75,7 +101,8 @@ Schedule `/geo full` (weekly is plenty) with Claude Code's `/schedule` or any cr
 
 ## Notes
 
-- Skills are written in **German** (the original stack is DACH-focused) — adapt the language. The scanner/scripts and this README are English.
+- All skills are English except `skills/longtail.md`, which is still German from the original DACH stack — adapt or translate it.
+- **`/ai-visibility` reports sensor health before it reports a rate.** An engine can answer HTTP 200 with an empty body; scored naively that reads as "we were not cited" and silently drags the rate down. Empty and errored asks are excluded from the denominator and reported separately, and any dead lane marks the whole run `UNTRUSTWORTHY`. Never report a rate from a run with a dead lane as a trend.
 - `geo/runs/`, `data/`, `logs/` are runtime output (gitignored).
 
 ## License

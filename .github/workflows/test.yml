@@ -8,10 +8,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Unit tests (zero-dependency GEO helpers)
-        run: npm test
+        run: node test/run.mjs
+      # This repo is a public clone-and-adapt template. The guard fails the build on
+      # anything org-specific: real email addresses, credential shapes, absolute home
+      # paths, bare UUIDs, hardcoded live domains. It deliberately carries no list of
+      # company names — see the header of scripts/check-generic.mjs for why.
+      - name: Template guard (working tree)
+        run: node scripts/check-generic.mjs
+      - name: Template guard (full history)
+        run: |
+          git fetch --unshallow || true
+          node scripts/check-generic.mjs --history
       - name: Syntax-check all scripts
-        run: for f in scanner/*.mjs geo/*.mjs test/*.mjs; do node --check "$f"; done
+        run: for f in scanner/*.mjs geo/*.mjs test/*.mjs scripts/*.mjs; do node --check "$f"; done

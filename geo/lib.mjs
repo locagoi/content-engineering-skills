@@ -76,3 +76,52 @@ export function buildBacklog({ citationGaps = [], gscOpps = [], topN = 25 } = {}
   }
   return items.sort((a, b) => b.score - a.score).slice(0, topN);
 }
+
+// ── Sensor health ────────────────────────────────────────────────────────────
+// An engine can answer HTTP 200 with an empty body. That is NOT "we were not cited",
+// it is "we did not measure" — but it looks identical in a naive tally and silently
+// drags the citation rate down. Treat a blank answer as unmeasured, never as a data point.
+export function isEmptyAnswer(text) {
+  return !String(text ?? '').replace(/\s/g, '').length;
+}
+
+// Per-engine health over a run's result rows. A row is *measured* only if it carries a
+// boolean `cited`; rows with `error` or `empty: true` are failures of the sensor, not
+// observations about the target. `rate` is therefore computed over measured rows only.
+// `healthy` is false when an engine measured less than `minMeasuredRatio` of its asks —
+// that engine's numbers must not be aggregated into a headline rate.
+export function engineHealth(results, { minMeasuredRatio = 0.8 } = {}) {
+  const byEngine = new Map();
+  for (const r of results || []) {
+    const e = byEngine.get(r.engine) || { engine: r.engine, asked: 0, measured: 0, empty: 0, errors: 0, cited: 0 };
+    e.asked++;
+    if (r.error) e.errors++;
+    else if (r.empty) e.empty++;
+    else if (typeof r.cited === 'boolean') { e.measured++; if (r.cited) e.cited++; }
+    byEngine.set(r.engine, e);
+  }
+  return [...byEngine.values()].map((e) => ({
+    ...e,
+    rate: e.measured ? Math.round((e.cited / e.measured) * 100) : null,
+    healthy: e.asked > 0 && e.measured / e.asked >= minMeasuredRatio,
+  }));
+}
+
+// Headline citation rate over measured rows only, plus what was thrown away and why.
+// `trustworthy` is false as soon as any engine lane is unhealthy: a rate that silently
+// averages a dead lane with live ones is a wrong number, not a conservative one.
+export function citationRate(results, opts = {}) {
+  const health = engineHealth(results, opts);
+  const measured = health.reduce((n, e) => n + e.measured, 0);
+  const cited = health.reduce((n, e) => n + e.cited, 0);
+  return {
+    rate: measured ? Math.round((cited / measured) * 100) : 0,
+    cited,
+    measured,
+    asked: health.reduce((n, e) => n + e.asked, 0),
+    empty: health.reduce((n, e) => n + e.empty, 0),
+    errors: health.reduce((n, e) => n + e.errors, 0),
+    health,
+    trustworthy: health.length > 0 && health.every((e) => e.healthy),
+  };
+}

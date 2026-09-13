@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { domainsIn, computeDelta } from './lib.mjs';
+import { domainsIn, computeDelta, isEmptyAnswer, citationRate } from './lib.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -56,7 +56,9 @@ async function ask(model, prompt) {
   });
   if (!res.ok) return { text: '', error: `${res.status} ${await res.text().catch(() => '')}`.slice(0, 200) };
   const j = await res.json();
-  return { text: j.choices?.[0]?.message?.content || '' };
+  const text = j.choices?.[0]?.message?.content || '';
+  // HTTP 200 + blank body = the lane answered nothing. Flag it; never score it.
+  return { text, empty: isEmptyAnswer(text) };
 }
 
 async function main() {
@@ -64,16 +66,14 @@ async function main() {
   const previous = loadPreviousResults();
   const results = [];
   const competitorTally = {};
-  let cited = 0, asked = 0;
 
   for (const prompt of prompts) {
     for (const [name, model] of Object.entries(engines)) {
-      asked++;
-      const { text, error } = await ask(model, prompt);
-      if (error) { console.log(`  ! ${name}: ${error}`); results.push({ prompt, engine: name, error }); continue; }
+      const { text, error, empty } = await ask(model, prompt);
+      if (error) { console.log(`  ! [${name}] ${error}`); results.push({ prompt, engine: name, error }); continue; }
+      if (empty) { console.log(`  ? [${name}] empty answer — not measured`); results.push({ prompt, engine: name, empty: true }); continue; }
       const domains = domainsIn(text);
       const hit = [...domains].some((d) => d === target || d.endsWith('.' + target));
-      if (hit) cited++;
       for (const d of domains) if (d !== target && !d.endsWith('.' + target)) competitorTally[d] = (competitorTally[d] || 0) + 1;
       console.log(`  ${hit ? '✓' : '·'} [${name}] ${prompt.slice(0, 60)}${prompt.length > 60 ? '…' : ''}`);
       results.push({ prompt, engine: name, cited: hit, domains: [...domains].slice(0, 10) });
@@ -82,10 +82,20 @@ async function main() {
 
   const topDomains = Object.entries(competitorTally).sort((a, b) => b[1] - a[1]).slice(0, 10);
   const gaps = results.filter((r) => r.cited === false).map((r) => ({ prompt: r.prompt, engine: r.engine, instead: (r.domains || []).slice(0, 3) }));
-  const rate = asked ? Math.round((cited / asked) * 100) : 0;
+  const { rate, cited, measured, asked, empty, errors, health, trustworthy } = citationRate(results);
 
   console.log(`\n────────────────────────────────────────`);
-  console.log(`Citation rate for ${target}: ${cited}/${asked} (${rate}%)`);
+  console.log(`Sensor health — ${measured}/${asked} prompts measured (${empty} empty, ${errors} errored)`);
+  for (const e of health) {
+    const r = e.rate === null ? 'no data' : `${e.rate}%`;
+    console.log(`  ${e.healthy ? '✓' : '⚠'} ${e.engine}: measured ${e.measured}/${e.asked}, cited ${e.cited} (${r})${e.healthy ? '' : '  ← LANE DEAD'}`);
+  }
+  if (!trustworthy) {
+    console.log(`\n⚠  At least one lane returned almost nothing. An empty lane is NOT evidence that`);
+    console.log(`   you are uncited — it is a broken sensor. Fix the model id or key before reading`);
+    console.log(`   the rate below as a measurement, and never report it as a trend.`);
+  }
+  console.log(`\nCitation rate for ${target}: ${cited}/${measured} measured (${rate}%)${trustworthy ? '' : '  [UNTRUSTWORTHY]'}`);
   console.log(`\nMost-cited domains across answers:`);
   for (const [d, n] of topDomains) console.log(`  • ${d} (${n}×)`);
   if (gaps.length) {
@@ -107,7 +117,7 @@ async function main() {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const outDir = join(HERE, 'runs', stamp);
   mkdirSync(outDir, { recursive: true });
-  const summary = { target, rate, cited, asked, topDomains, gaps, delta, results, ranAt: stamp };
+  const summary = { target, rate, cited, measured, asked, empty, errors, trustworthy, health, topDomains, gaps, delta, results, ranAt: stamp };
   writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
   console.log(`\nSaved: geo/runs/${stamp}/summary.json\n`);
 }

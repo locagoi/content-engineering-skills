@@ -4,7 +4,9 @@
   "description": "Self-contained GEO (Generative Engine Optimization) toolkit for Claude Code: scan, analytics, citation tracking, content gaps, and measurement.",
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "bin": {
     "geo-scan": "scanner/check.mjs",
     "geo-citations": "geo/citation-check.mjs",
@@ -12,11 +14,12 @@
     "geo-gaps": "geo/gaps.mjs"
   },
   "scripts": {
-    "test": "node test/run.mjs",
+    "test": "node test/run.mjs && node scripts/check-generic.mjs",
     "scan": "node scanner/check.mjs",
     "citations": "node geo/citation-check.mjs",
     "demand": "node geo/demand.mjs",
-    "gaps": "node geo/gaps.mjs"
+    "gaps": "node geo/gaps.mjs",
+    "guard": "node scripts/check-generic.mjs"
   },
   "dependencies": {
     "googleapis": "^144.0.0"
