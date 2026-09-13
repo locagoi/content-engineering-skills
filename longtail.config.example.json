@@ -1,0 +1,40 @@
+{
+  "_comment": "Copy to longtail.config.json and fill in your own values. /longtail reads this instead of hardcoding anything org-specific. Nothing in this file should ever be committed with real values — longtail.config.json is gitignored.",
+  "site": "example.com",
+  "_site": "Your domain, without protocol. Used in prompts and for internal-link building.",
+  "section": "/knowledge/",
+  "_section": "The URL section new articles are published under, with leading and trailing slash. Whatever your site calls it — /blog/, /resources/, /guides/.",
+  "language": "en",
+  "_language": "Content language. The skill writes in this language; the shipped prompt text is German because the original stack was DACH — translate it to match.",
+  "seeds": [
+    "<your core category>",
+    "<the problem you solve>",
+    "<your category> software",
+    "<your category> agency",
+    "<adjacent category>",
+    "<compliance or regulation term in your market>",
+    "<competitor brand>",
+    "<another competitor brand>"
+  ],
+  "_seeds": "Seed terms for the Google Autocomplete sweep. Each seed is expanded a–z, so 8–20 seeds is plenty. Include competitor brands ONLY if you want their comparison queries in your backlog — and be aware that whoever reads this file learns which competitors you track. Keep the real list in longtail.config.json, never here.",
+  "topics": [
+    "<your core category>",
+    "<adjacent category>",
+    "tools in your stack",
+    "regulation in your market",
+    "<your discipline>"
+  ],
+  "_topics": "Allowed topic scope. A keyword outside this list is never an article candidate, however good its volume looks. This list is your content strategy — keep the real one in longtail.config.json.",
+  "brandTermsToIgnore": [
+    "<competitor brand> login",
+    "<competitor brand> pricing",
+    "<competitor brand> api"
+  ],
+  "_brandTermsToIgnore": "Navigational brand queries. Only the official site ranks for these — never write an article against them.",
+  "metaLimits": {
+    "titleMaxChars": 58,
+    "descriptionMaxChars": 160
+  },
+  "trailingSlash": true,
+  "_trailingSlash": "Set to match your site's build config. If true, every internal link needs a trailing slash or it 404s in dev and redirects in prod."
+}

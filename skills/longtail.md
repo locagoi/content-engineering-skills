@@ -1,12 +1,12 @@
 ---
-description: "Analyse GSC-Daten, finde Keyword-Lücken, schreibe /wissen/ Artikel für example.com"
+description: "Analyse GSC-Daten, finde Keyword-Luecken, schreibe Artikel fuer die eigene Site (Konfiguration: longtail.config.json)"
 ---
 
 # /longtail — Programmatic SEO Artikel Generator (v3)
 
-> **Vor Code + Content: [`CONVENTIONS.md`](../CONVENTIONS.md) beachten** — Norton-TLS (`NODE_OPTIONS=--use-system-ca` vor JEDEM Node-Script, sonst `fetch failed`), Trailing-Slash bei internen Links (`/wissen/slug/`), SEO-Meta-Limits (Titel ≤58 Z / Description ≤160 Z), YOUR_PRODUCT-Architektur vertraulich, Indexing-/SA-Owner-Caveat.
+> **Vor Code + Content: [`CONVENTIONS.md`](../CONVENTIONS.md) beachten** — Norton-TLS (`NODE_OPTIONS=--use-system-ca` vor JEDEM Node-Script, sonst `fetch failed`), Trailing-Slash bei internen Links (`<section>/slug/`), SEO-Meta-Limits (Titel ≤58 Z / Description ≤160 Z), YOUR_PRODUCT-Architektur vertraulich, Indexing-/SA-Owner-Caveat.
 
-Du bist ein SEO-Content-Generator für example.com. Deine Aufgabe: Basierend auf GSC-Daten, Google Autocomplete und einem Volumen-Proxy-Score neue `/wissen/`-Artikel identifizieren und schreiben.
+Du bist ein SEO-Content-Generator fuer die in `longtail.config.json` konfigurierte Site. Deine Aufgabe: Basierend auf GSC-Daten, Google Autocomplete und einem Volumen-Proxy-Score neue `<section>/`-Artikel identifizieren und schreiben.
 
 ## Ablauf
 
@@ -19,6 +19,7 @@ const auth = new google.auth.GoogleAuth({
   keyFile: process.env.GSC_CREDENTIALS_FILE,
   scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
 });
+const { readFileSync } = require('fs');
 async function run() {
   const client = await auth.getClient();
   const sc = google.searchconsole({ version: 'v1', auth: client });
@@ -56,14 +57,11 @@ function fetchSuggestions(query) {
   });
 }
 async function run() {
-  const seeds = [
-    'b2b kaltakquise', 'cold email', 'b2b leadgenerierung',
-    'b2b vertrieb', 'outbound sales', 'clay crm',
-    'instantly email', 'linkedin outreach', 'ki vertrieb',
-    'dsgvo kaltakquise', 'sales automation', 'b2b pipeline',
-    'heyreach', 'lemlist', 'apollo io',
-    'ai lead generation', 'gtm engineering', 'revenue operations'
-  ];
+  // Seeds kommen aus longtail.config.json (Vorlage: longtail.config.example.json).
+  // NIE hier hartkodieren: die Seed-Liste IST die eigene Keyword- und
+  // Wettbewerbsstrategie und hat in einem oeffentlichen Template nichts zu suchen.
+  const cfg = JSON.parse(readFileSync('longtail.config.json', 'utf8'));
+  const seeds = cfg.seeds;
   const allSuggestions = new Map();
   for (const seed of seeds) {
     const base = await fetchSuggestions(seed);
@@ -98,10 +96,7 @@ cd "$PROJECTS_DIR/your-site" && node -e "
 const googleTrends = require('google-trends-api');
 async function run() {
   const anchor = 'b2b vertrieb';
-  const seeds = ['b2b kaltakquise','cold email','b2b leadgenerierung','outbound sales',
-    'clay crm','instantly email','linkedin outreach','ki vertrieb',
-    'dsgvo kaltakquise','sales automation','b2b pipeline',
-    'heyreach','lemlist','apollo io','ai lead generation','gtm engineering','revenue operations'];
+  const seeds = JSON.parse(readFileSync('longtail.config.json', 'utf8')).seeds;
   const results = {};
   for (let i = 0; i < seeds.length; i += 4) {
     const batch = [anchor, ...seeds.slice(i, i + 4)].slice(0, 5);
@@ -132,10 +127,10 @@ run();
 
 **Ergebnis:** Eine `seedVolumes`-Map (z.B. `{ 'sales automation': 967, 'revenue operations': 800, ... }`). Diese wird in Schritt 5 gebraucht.
 
-### Schritt 4: Bestehende /wissen/ Artikel lesen
+### Schritt 4: Bestehende <section>/ Artikel lesen
 
 ```bash
-ls "$PROJECTS_DIR/your-site/src/content/wissen/"
+ls "$PROJECTS_DIR/your-site/src/content<section>/"
 ```
 
 ### Schritt 5: Volumen-Proxy-Scoring + Themen-Gruppierung
@@ -162,21 +157,18 @@ geschätztes_volumen = seed_trends_volumen × ac_positions_gewicht
 Gruppiere ALLE Keywords (GSC + AC) nach potentiellen Artikeln. Jedes Keyword gehört zu maximal einem Thema. Pro Thema summiere die geschätzten Volumen aller zugehörigen Keywords.
 
 **WICHTIG — Fallen erkennen:**
-- **Brand-Searches ignorieren:** Keywords wie "lemlist login", "heyreach api", "apollo io pricing" sind Brand-Traffic → dafür rankt nur die offizielle Site. KEIN Artikel schreiben.
+- **Brand-Searches ignorieren:** Keywords wie "<competitor> login", "<competitor> api", "<competitor> pricing" sind Brand-Traffic → dafür rankt nur die offizielle Site. KEIN Artikel schreiben.
 - **Firmennamen-Noise:** "sales automation gmbh", "sales automation labs ug" = Firmen, nicht Themen
 - **Job-Keywords filtern:** "... manager", "... salary", "... jobs" = kein Content-Intent
 
 #### 5c. Relevanz-Filter
 
-**NUR Keywords zu diesen Themen:**
-- B2B Outbound / Kaltakquise / Cold Email
-- Leadgenerierung / Pipeline
-- KI/AI im Vertrieb / Sales Automation
-- Tools: Clay, Instantly, Lemlist, HeyReach, n8n, HubSpot, Apollo
-- LinkedIn Outreach / Authority
-- DACH-Compliance / DSGVO
-- AI Search Visibility / GEO / LLM Optimierung
-- Revenue Operations / GTM Engineering
+**NUR Keywords zu den Themen aus `longtail.config.json` → `topics`.**
+
+Die Themenliste ist org-spezifisch und steht deshalb in der Konfiguration, nicht hier.
+Typischer Zuschnitt: die eigene Kernkategorie, die angrenzende Kategorie, die Tools des
+eigenen Stacks, die Regulierung des eigenen Markts, die eigene Disziplin. Alles ausserhalb
+dieser Liste ist kein Artikel-Kandidat, egal wie gut das Suchvolumen aussieht.
 
 **Für Autocomplete: Sprach-Filter anwenden:**
 - Deutsche Keywords → immer relevant (passen zur Zielgruppe)
@@ -216,10 +208,10 @@ Präsentiere die Top 10 **Artikel-Themen** (nicht einzelne Keywords!) sortiert n
 ### Schritt 7: Artikel schreiben
 
 Für jeden bestätigten Artikel:
-- Schreibe eine Markdown-Datei in `src/content/wissen/`
+- Schreibe eine Markdown-Datei in `src/content<section>/`
 - Schema: title, description, cluster (outbound|tools|ai-vertrieb|dach-compliance|roi-strategie), tags, relatedSlugs, faq, publishedAt
 - 3-5 FAQ-Einträge mit konkreten Antworten
-- relatedSlugs: Verlinke auf bestehende /wissen/ Artikel
+- relatedSlugs: Verlinke auf bestehende <section>/ Artikel
 - Content: Substanziell, mit Tabellen, konkreten Zahlen, Vergleichen
 - Ton: Professionell, direkt, keine Marketing-Floskeln
 - Sprache: Deutsch (außer Keyword ist explizit Englisch)
@@ -239,10 +231,10 @@ Das sind die Signale, die in AI-Antworten überproportional zitiert werden (sieh
 cd "$PROJECTS_DIR/your-site"
 git checkout dev
 npm run build
-git add src/content/wissen/
-git commit -m "feat: add X new /wissen/ articles (batch N)"
+git add src/content<section>/
+git commit -m "feat: add X new <section>/ articles (batch N)"
 git push origin dev
-gh pr create --base main --head dev --title "feat: X neue /wissen/ Artikel" --body "..."
+gh pr create --base main --head dev --title "feat: X neue <section>/ Artikel" --body "..."
 ```
 
 ### Schritt 9: Google Indexing nach Merge
@@ -256,8 +248,8 @@ cd "$PROJECTS_DIR/your-site" && npm run index -- --new
 ## Wichtige Regeln
 - **IMMER auf dev Branch arbeiten**, nie auf main
 - **Keine Repo-Scans** — du weißt wo alles liegt
-- **Keine irrelevanten Keywords** — nur YOUR_BRAND-relevante Themen
-- **Brand-Searches sind keine Artikel-Kandidaten** — "lemlist login" rankt nur lemlist.com
+- **Keine irrelevanten Keywords** — nur Themen aus `longtail.config.json` → `topics`
+- **Brand-Searches sind keine Artikel-Kandidaten** — "<competitor> login" rankt nur auf der Seite des Anbieters selbst
 - **Volumen-Proxy > Keyword-Anzahl** — 5 Keywords mit hohem Seed-Volumen schlagen 100 Keywords mit Seed-Volumen 0
 - **Bestehende Artikel nicht überschreiben**
 - **User muss Artikel-Liste bestätigen** bevor geschrieben wird

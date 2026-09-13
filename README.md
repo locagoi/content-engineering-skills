@@ -9,7 +9,8 @@ Two loops, one repo:
 - **The GEO loop** — `analytics → gaps → content → measure`. Point it at your site and grow AI-search visibility on a schedule.
 - **The pipeline loop** — `idea → gate → creation → gate → publish`. A scheduled dispatcher runs the next due step and stops at the two decisions a human actually owns.
 
-> Built for a real content stack, released as a clone-and-adapt template. Org-specific values are `YOUR_*` placeholders.
+> Built for a real content stack, released as a clone-and-adapt template. Org-specific values are `YOUR_*` placeholders,
+> and a CI guard keeps it that way — see [CONTRIBUTING.md](CONTRIBUTING.md) before adding anything.
 
 ## The loop
 
@@ -66,6 +67,8 @@ export PROJECTS_DIR="$HOME/Projects"     # macOS/Linux  (Windows: setx PROJECTS_
 | `geo/gaps.mjs` | merges demand + citation gaps → ranked backlog | nothing |
 | `geo/lib.mjs` + `test/run.mjs` | pure, unit-tested helpers (`npm test`) | nothing |
 | `pipeline/state.example.json` | the pipeline state schema (copy it, commit your `state.json`) | nothing |
+| `longtail.config.example.json` | seeds, topic scope and site settings for `/longtail` (copy to `longtail.config.json`, gitignored) | nothing |
+| `scripts/check-generic.mjs` | template guard — fails CI on anything org-specific | nothing |
 | `skills/*.md` | the slash-commands: `pipeline`, `ideation`, `geo`, `scan`, `demand`, `ai-visibility`, `longtail` | — |
 | `GEO-PLAYBOOK.md`, `STRATEGY.md`, `CONVENTIONS.md` | the why + your templates | — |
 
@@ -78,7 +81,7 @@ export PROJECTS_DIR="$HOME/Projects"     # macOS/Linux  (Windows: setx PROJECTS_
 | `/scan` | nothing |
 | `/ai-visibility` | an [OpenRouter](https://openrouter.ai) key (`OPENROUTER_API_KEY`); verify model ids in `geo/prompts.json` |
 | `/demand` | Google service account (`GSC_CREDENTIALS_FILE`, `GSC_SITE`, optional `GA4_PROPERTY_ID`) + a Clarity MCP |
-| `/longtail` | your own site (assumes Astro) + a publishing path |
+| `/longtail` | your own site (assumes Astro) + a publishing path + `longtail.config.json` |
 
 Secrets go in env vars or a folder **outside** the repo — nothing here reads a hard-coded key.
 
