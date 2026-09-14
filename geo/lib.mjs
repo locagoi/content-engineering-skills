@@ -93,11 +93,14 @@ export function isEmptyAnswer(text) {
 export function engineHealth(results, { minMeasuredRatio = 0.8 } = {}) {
   const byEngine = new Map();
   for (const r of results || []) {
-    const e = byEngine.get(r.engine) || { engine: r.engine, asked: 0, measured: 0, empty: 0, errors: 0, cited: 0 };
+    const e = byEngine.get(r.engine) || { engine: r.engine, asked: 0, measured: 0, empty: 0, truncated: 0, unsourced: 0, errors: 0, cited: 0 };
     e.asked++;
-    if (r.error) e.errors++;
-    else if (r.empty) e.empty++;
-    else if (typeof r.cited === 'boolean') { e.measured++; if (r.cited) e.cited++; }
+    const kind = classify(r);
+    if (kind === 'errored') e.errors++;
+    else if (kind === 'empty') e.empty++;
+    else if (kind === 'truncated') e.truncated++;
+    else if (kind === 'unsourced') e.unsourced++;
+    else { e.measured++; if (r.cited) e.cited++; }
     byEngine.set(r.engine, e);
   }
   return [...byEngine.values()].map((e) => ({
@@ -120,8 +123,31 @@ export function citationRate(results, opts = {}) {
     measured,
     asked: health.reduce((n, e) => n + e.asked, 0),
     empty: health.reduce((n, e) => n + e.empty, 0),
+    truncated: health.reduce((n, e) => n + e.truncated, 0),
+    unsourced: health.reduce((n, e) => n + e.unsourced, 0),
     errors: health.reduce((n, e) => n + e.errors, 0),
     health,
     trustworthy: health.length > 0 && health.every((e) => e.healthy),
   };
+}
+
+// An answer that names NO domain at all is usually not "we were not cited" — it is an
+// engine that answered from training recall without searching the web. Nobody is cited in
+// such an answer, not even a competitor, so it is not a visibility gap and must not become
+// a content task. Distinguishing the two is the difference between a backlog of real gaps
+// and a backlog padded with questions that trigger no search at all.
+export function classify(row) {
+  if (row.error) return 'errored';
+  if (row.empty) return 'empty';        // HTTP 200, blank body — the lane measured nothing
+  if (row.truncated) return 'truncated'; // hit the token limit; citations may be cut off
+  if (!row.domains || row.domains.length === 0) return 'unsourced'; // answered without search
+  return row.cited ? 'cited' : 'gap';
+}
+
+// Rows that carry a real observation about the target. `unsourced` and `truncated` are
+// excluded: in both the engine never produced a citable answer, so counting them as
+// "not cited" understates the rate and inflates the gap list.
+export function isMeasured(row) {
+  const k = classify(row);
+  return k === 'cited' || k === 'gap';
 }

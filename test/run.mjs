@@ -1,5 +1,5 @@
 // Zero-dependency tests for the pure GEO helpers. Run: npm test
-import { domainsIn, computeDelta, strikingDistance, buildBacklog, isEmptyAnswer, engineHealth, citationRate } from '../geo/lib.mjs';
+import { domainsIn, computeDelta, strikingDistance, buildBacklog, isEmptyAnswer, engineHealth, citationRate, classify, isMeasured } from '../geo/lib.mjs';
 
 let failed = 0;
 const eq = (got, want, msg) => {
@@ -74,7 +74,40 @@ const ce = citationRate(errored, { minMeasuredRatio: 0.5 });
 eq([ce.rate, ce.measured, ce.errors], [100, 1, 1], 'errored ask excluded from the rate, reported separately');
 
 // All lanes healthy → trustworthy.
-ok(citationRate([{ engine: 'x', prompt: 'a', cited: true, domains: [] }]).trustworthy === true, 'fully measured run is trustworthy');
+// domains MUST be non-empty here: an answer naming no domain at all is now classified
+// as 'unsourced' (the engine did not search), which is not a measurement.
+ok(citationRate([{ engine: 'x', prompt: 'a', cited: true, domains: ['me.com'] }]).trustworthy === true, 'fully measured run is trustworthy');
+
+console.log('classify — die vier Arten, nichts gemessen zu haben');
+eq(classify({ error: '429' }), 'errored', 'HTTP-Fehler');
+eq(classify({ empty: true }), 'empty', 'leerer Body bei HTTP 200');
+eq(classify({ truncated: true, domains: [] }), 'truncated', 'am Token-Limit abgerissen');
+eq(classify({ domains: [] }), 'unsourced', 'Antwort ganz ohne Domains = ohne Websuche');
+eq(classify({ domains: ['rival.com'], cited: false }), 'gap', 'Domains da, wir nicht dabei');
+eq(classify({ domains: ['me.com'], cited: true }), 'cited', 'wir sind dabei');
+ok(!isMeasured({ domains: [] }) && !isMeasured({ truncated: true }), 'unsourced und truncated sind keine Messung');
+ok(isMeasured({ domains: ['x.com'], cited: false }), 'ein echter Gap IST eine Messung');
+
+console.log('citationRate — unsourced darf die Rate nicht druecken');
+// Vier Prompts: zweimal zitiert, einmal echter Gap, einmal ohne Websuche beantwortet.
+// Naiv gezaehlt waere das 2/4 = 50 %. Richtig ist 2/3 = 67 %, weil die vierte Zeile
+// gar keine Beobachtung ueber uns enthaelt — dort wurde NIEMAND zitiert.
+const mixed = [
+  { engine: 'p', prompt: 'a', cited: true,  domains: ['me.com'] },
+  { engine: 'p', prompt: 'b', cited: true,  domains: ['me.com'] },
+  { engine: 'p', prompt: 'c', cited: false, domains: ['rival.com'] },
+  { engine: 'p', prompt: 'd', cited: false, domains: [] },
+];
+const cm = citationRate(mixed);
+eq([cm.rate, cm.cited, cm.measured, cm.asked], [67, 2, 3, 4], 'Rate 67% ueber 3 gemessene, nicht 50% ueber 4 gefragte');
+eq([cm.unsourced, cm.empty, cm.errors], [1, 0, 0], 'die vierte Zeile zaehlt als unsourced');
+
+console.log('citationRate — truncated ebenso');
+const cut = citationRate([
+  { engine: 'x', prompt: 'a', cited: true, domains: ['me.com'] },
+  { engine: 'x', prompt: 'b', cited: false, domains: [], truncated: true },
+], { minMeasuredRatio: 0.4 });
+eq([cut.rate, cut.measured, cut.truncated], [100, 1, 1], 'abgeschnittene Antwort raus aus dem Nenner');
 
 console.log(`\n${failed ? `FAILED: ${failed} assertion(s)` : 'All tests passed'}`);
 process.exit(failed ? 1 : 0);
