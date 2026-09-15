@@ -14,11 +14,11 @@ export function domainsIn(text) {
   return found;
 }
 
+// The two outcomes that actually measured visibility. Everything else (errored,
+// empty, truncated, unsourced) tells you about the lane, not about the market.
+const MEASURED = new Set(['gap', 'cited']);
+
 const key = (r) => `${r.engine}::${r.prompt}`;
-const rate = (rows) => {
-  const scored = rows.filter((r) => typeof r.cited === 'boolean');
-  return scored.length ? Math.round((scored.filter((r) => r.cited).length / scored.length) * 100) : 0;
-};
 
 // Diff two runs' result arrays ([{prompt, engine, cited, domains}]).
 // Returns the citation-rate change plus which prompt×engine pairs closed (gap→cited)
@@ -30,18 +30,39 @@ export function computeDelta(prev, curr) {
   const opened = [];
   for (const c of curr) {
     const p = prevMap.get(key(c));
-    if (!p || typeof p.cited !== 'boolean' || typeof c.cited !== 'boolean') continue;
-    if (!p.cited && c.cited) closed.push({ engine: c.engine, prompt: c.prompt });
-    if (p.cited && !c.cited) opened.push({ engine: c.engine, prompt: c.prompt });
+    if (!p) continue;
+    // Only rows that MEASURED something on both sides can have moved. A prompt that
+    // was cited last week and came back unsourced this week did not lose a citation;
+    // the engine just did not search. Counting it as an opened gap invents a loss.
+    const pk = classify(p), ck = classify(c);
+    if (!MEASURED.has(pk) || !MEASURED.has(ck)) continue;
+    if (pk === 'gap' && ck === 'cited') closed.push({ engine: c.engine, prompt: c.prompt });
+    if (pk === 'cited' && ck === 'gap') opened.push({ engine: c.engine, prompt: c.prompt });
   }
   const domSet = (rows) => new Set(rows.flatMap((r) => r.domains || []));
   const prevDoms = domSet(prev);
   const currDoms = domSet(curr);
   const gained = [...currDoms].filter((d) => !prevDoms.has(d));
   const lost = [...prevDoms].filter((d) => !currDoms.has(d));
-  const prevRate = rate(prev);
-  const currRate = rate(curr);
-  return { prevRate, currRate, delta: currRate - prevRate, closed, opened, gainedDomains: gained, lostDomains: lost };
+  // Both rates come from citationRate(), the SAME function that prints the headline.
+  // A second, simpler rate helper used to live here and scored every row with a
+  // boolean `cited` — so one run reported two different rates: 67 % in the headline
+  // and 40 % in the delta line. Whoever read the delta line read the old, wrong
+  // denominator, which is exactly the confusion this module exists to remove.
+  const prevStats = citationRate(prev);
+  const currStats = citationRate(curr);
+  // An old summary written before rows carried `domains` re-scores as all-unsourced,
+  // i.e. measured === 0. That is not a 0 % citation rate, it is an unreadable run.
+  // Say so instead of printing a drop that never happened.
+  const comparable = prevStats.measured > 0 && currStats.measured > 0;
+  const prevRate = prevStats.rate;
+  const currRate = currStats.rate;
+  return {
+    prevRate, currRate, comparable,
+    prevMeasured: prevStats.measured, currMeasured: currStats.measured,
+    delta: comparable ? currRate - prevRate : null,
+    closed, opened, gainedDomains: gained, lostDomains: lost,
+  };
 }
 
 // "Striking distance" search demand: queries that already rank on page 1–2 (pos 5–20) with

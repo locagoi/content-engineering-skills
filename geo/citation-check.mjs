@@ -115,9 +115,14 @@ async function main() {
   }
 
   const delta = computeDelta(previous, results);
-  if (delta) {
+  if (delta && !delta.comparable) {
+    console.log(`\nChange vs previous run: not comparable — the previous run measured ${delta.prevMeasured} rows, this one ${delta.currMeasured}.`);
+    console.log(`  A run with nothing measured has no rate to compare against. Gap and domain moves below still hold.`);
+  } else if (delta) {
     const sign = delta.delta > 0 ? '+' : '';
     console.log(`\nChange vs previous run: ${delta.prevRate}% → ${delta.currRate}%  (${sign}${delta.delta} pts)`);
+  }
+  if (delta) {
     if (delta.closed.length) console.log(`  ✓ gaps closed (now cited): ${delta.closed.map((c) => `[${c.engine}] ${c.prompt.slice(0, 50)}`).join(' | ')}`);
     if (delta.opened.length) console.log(`  ✗ gaps opened (lost citation): ${delta.opened.map((c) => `[${c.engine}] ${c.prompt.slice(0, 50)}`).join(' | ')}`);
     if (delta.gainedDomains.length) console.log(`  + new domains in answers: ${delta.gainedDomains.slice(0, 8).join(', ')}`);
