@@ -73,6 +73,14 @@ without contradiction is a reference — useful, but nobody passes it on.
   add one rule on top: if you already have a card for the job, it gets **linked and extended**,
   never rebuilt. Two half-answers to the same question cannibalise each other in search and
   give answer engines nothing coherent to cite.
+- **The job is pure administration.** A task can pass all four gate questions — nameable
+  shape, real ownership, genuine contradiction — and still be boring, because the job itself
+  carries no friction anyone would tell a story about. Vendor-compliance checklists and
+  tool-replace-or-keep decision grids are the recurring shape of this failure: correct,
+  ownable, still a form nobody passes on. The test: would anyone ever tell an anecdote about
+  this decision ("we switched because...", "they couldn't answer when we asked...")? If the
+  honest answer is no, the job is administration, not a story, no matter how clean the
+  artefact is.
 
 ## Cap and ordering
 
